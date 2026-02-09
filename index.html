@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Black Bolt SAR Cards</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .info-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.3em;
+            padding: 40px;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message { padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .error { background: #fee; color: #c33; border-left: 4px solid #c33; }
+        .success { background: #efe; color: #363; border-left: 4px solid #363; }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: white;
+        }
+        .card-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .card-details { font-size: 0.9em; opacity: 0.95; }
+        .card-body { padding: 20px; }
+        .price-section { margin-bottom: 15px; }
+        .price-label {
+            font-size: 0.85em;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .price-value {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: 700;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+        .info-label { color: #666; font-weight: 500; }
+        .info-value { color: #333; font-weight: 600; }
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            color: #999;
+            font-size: 1.2em;
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8em; }
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎴 Black Bolt SAR Cards</h1>
+            <p>Special Art Rare Pokémon Cards with Pricing</p>
+        </header>
+
+        <div id="message"></div>
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading SAR cards...</p>
+        </div>
+        <div id="cardsContainer" class="cards-grid"></div>
+    </div>
+
+    <script>
+        const API_KEY = 'pokeprice_free_67abf1594acce302cdbaaf1339c9234cbc402f5726e95cd7';
+        const API_URL = 'https://www.pokemonpricetracker.com/api/v2/cards?set=sv-black-bolt&limit=100';
+
+        async function loadCards() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('cardsContainer');
+            const message = document.getElementById('message');
+
+            loading.style.display = 'block';
+            message.innerHTML = '';
+
+            try {
+                const response = await fetch(API_URL, {
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.cards || data.cards.length === 0) {
+                    message.innerHTML = '<div class="message error">No cards found</div>';
+                    container.innerHTML = '<div class="no-results">No SAR cards found in Black Bolt set</div>';
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                // Filter for SAR rarity
+                const sarCards = data.cards.filter(card => 
+                    card.rarity && card.rarity.toUpperCase().includes('SAR')
+                );
+
+                if (sarCards.length === 0) {
+                    message.innerHTML = '<div class="message error">No SAR cards found. Showing other cards...</div>';
+                    displayCards(data.cards.slice(0, 20));
+                } else {
+                    message.innerHTML = `<div class="message success">✅ Found ${sarCards.length} SAR card(s)</div>`;
+                    displayCards(sarCards);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                message.innerHTML = `<div class="message error">❌ Error: ${error.message}</div>`;
+                container.innerHTML = '<div class="no-results">Failed to load cards. Try refreshing.</div>';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayCards(cards) {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+
+            cards.forEach(card => {
+                const div = document.createElement('div');
+                div.className = 'card';
+
+                const price = card.prices?.market;
+                const priceHTML = price 
+                    ? `<div class="price-value">$${price.toFixed(2)}</div>`
+                    : '<div class="price-value" style="color: #999; font-size: 1em;">N/A</div>';
+
+                div.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-name">${card.name}</div>
+                        <div class="card-details">
+                            <div>#${card.cardNumber || 'N/A'}</div>
+                            <div>${card.rarity || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="price-section">
+                            <div class="price-label">Market Price</div>
+                            ${priceHTML}
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Type:</span>
+                            <span class="info-value">${card.type || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Rarity:</span>
+                            <span class="info-value">${card.rarity || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+        // Load on page load
+        window.addEventListener('load', loadCards);
+    </script>
+</body>
+</html>
