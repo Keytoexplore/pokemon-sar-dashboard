@@ -132,9 +132,6 @@
     </div>
 
     <script>
-        const API_KEY = 'pokeprice_free_67abf1594acce302cdbaaf1339c9234cbc402f5726e95cd7';
-        const API_URL = 'https://www.pokemonpricetracker.com/api/v2/cards?set=sv-black-bolt&limit=100';
-
         async function loadCards() {
             const loading = document.getElementById('loading');
             const container = document.getElementById('cardsContainer');
@@ -144,9 +141,8 @@
             message.innerHTML = '';
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch('/api/cards', {
                     headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
                         'Accept': 'application/json'
                     }
                 });
